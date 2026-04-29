@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prayer Times</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap');
+
+        :root {
+            --bg: #07090f;
+            --gold: #c9a227;
+            --gold-light: #e8d48b;
+            --gold-dim: rgba(201, 162, 39, 0.25);
+            --text: #e4dfd4;
+            --text-dim: rgba(228, 223, 212, 0.5);
+            --text-muted: rgba(228, 223, 212, 0.25);
+            --border: rgba(201, 162, 39, 0.1);
+            --accent-grad: rgba(201,162,39,0.04);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            font-family: 'Poppins', sans-serif;
+            color: var(--text);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            background:
+                radial-gradient(ellipse at 50% 0%, var(--accent-grad) 0%, transparent 50%),
+                radial-gradient(ellipse at 0% 100%, var(--accent-grad) 0%, transparent 40%),
+                radial-gradient(ellipse at 100% 100%, var(--accent-grad) 0%, transparent 40%),
+                var(--bg);
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-conic-gradient(rgba(255,255,255,0.008) 0% 25%, transparent 0% 50%) 0 0 / 60px 60px;
+            pointer-events: none;
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+        }
+
+        /* ── Burger Menu ── */
+        .burger {
+            position: static;
+            flex-shrink: 0;
+            z-index: 100;
+            cursor: pointer;
+            width: 28px;
+            height: 22px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            opacity: 0.3;
+            transition: opacity 0.3s;
+        }
+        .burger:hover { opacity: 0.8; }
+        .burger span {
+            display: block;
+            height: 2px;
+            width: 100%;
+            background: var(--gold);
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+        .burger.open span:nth-child(1) { transform: rotate(45deg) translate(6px, 6px); }
+        .burger.open span:nth-child(2) { opacity: 0; }
+        .burger.open span:nth-child(3) { transform: rotate(-45deg) translate(7px, -7px); }
+
+        /* ── Settings Panel ── */
+        .settings-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s;
+        }
+        .settings-overlay.open { opacity: 1; pointer-events: all; }
+
+        .settings-panel {
+            position: fixed;
+            top: 0; left: 0;
+            width: 280px;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(15,18,30,0.98), rgba(7,9,15,0.99));
+            border-right: 1px solid var(--border);
+            z-index: 95;
+            transform: translateX(-100%);
+            transition: transform 0.4s ease;
+            padding: 50px 20px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .settings-panel.open { transform: translateX(0); }
+
+        .settings-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gold);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .setting-label {
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .setting-input {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--text);
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .setting-input:focus { border-color: var(--gold); }
+
+        .setting-select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--text);
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+        }
+        .setting-select option { background: #111; }
+
+        .setting-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+        }
+
+        .setting-toggle-label {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .toggle-switch {
+            width: 40px;
+            height: 22px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 11px;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.3s;
+        }
+        .toggle-switch.on { background: var(--gold-dim); }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 3px; left: 3px;
+            width: 16px; height: 16px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        .toggle-switch.on::after {
+            left: 21px;
+            background: var(--gold);
+        }
+
+        .setting-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
+        }
+
+        .setting-btn {
+            background: var(--gold-dim);
+            border: 1px solid var(--gold);
+            border-radius: 6px;
+            padding: 10px;
+            color: var(--gold);
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        .setting-btn:hover { background: var(--gold); color: var(--bg); }
+
+        /* ── Top bar ── */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px 6px;
+        }
+
+        .top-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .clock { font-size: 32px; font-weight: 300; letter-spacing: 1px; }
+
+        .date-block { text-align: right; }
+
+        .greg-date {
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            transition: all 0.4s;
+        }
+        .greg-date.hidden { display: none; }
+
+        .hijri-date {
+            font-family: 'Amiri', serif;
+            font-size: 15px;
+            color: var(--gold-dim);
+            display: flex;
+            flex-direction: row;
+            gap: 5px;
+            justify-content: flex-end;
+            direction: ltr;
+            transition: all 0.4s;
+        }
+        .hijri-date.hidden { display: none; }
+
+        .hijri-date .h-year { order: 1; }
+        .hijri-date .h-month { order: 2; }
+        .hijri-date .h-day { order: 3; }
+
+        /* ── Du'a Hero ── */
+        .duaa-hero {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 10px 20px;
+            position: relative;
+            transition: all 0.4s;
+        }
+
+        .duaa-ornament {
+            font-family: 'Amiri', serif;
+            font-size: 38px;
+            color: var(--gold);
+            margin-bottom: 12px;
+            text-shadow: 0 0 20px var(--gold-dim);
+            transition: all 0.4s;
+        }
+        .duaa-ornament.hidden { display: none; }
+
+        .duaa-arabic {
+            font-family: 'Amiri', serif;
+            font-size: 36px;
+            line-height: 1.8;
+            color: var(--text);
+            direction: rtl;
+            max-width: 90%;
+            opacity: 1;
+            transition: opacity 1s ease, font-size 0.4s;
+        }
+        .duaa-arabic.fade { opacity: 0; }
+        .duaa-arabic.enlarged { font-size: 44px; }
+
+        .duaa-line {
+            width: 80px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            margin: 12px auto;
+            box-shadow: 0 0 8px var(--gold-dim);
+            transition: all 0.4s;
+        }
+        .duaa-line.hidden { display: none; }
+
+        .duaa-translation {
+            font-size: 16px;
+            font-weight: 300;
+            color: var(--text-dim);
+            font-style: italic;
+            max-width: 85%;
+            line-height: 1.6;
+            opacity: 1;
+            transition: opacity 1s ease, all 0.4s;
+        }
+        .duaa-translation.fade { opacity: 0; }
+        .duaa-translation.hidden { display: none; }
+
+        .duaa-ref {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            letter-spacing: 1px;
+            opacity: 1;
+            transition: opacity 1s ease, all 0.4s;
+        }
+        .duaa-ref.fade { opacity: 0; }
+        .duaa-ref.hidden { display: none; }
+
+        /* ── Bottom prayer strip ── */
+        .prayer-strip {
+            border-top: 1px solid var(--border);
+            padding: 8px 10px 10px;
+            background: linear-gradient(180deg, var(--accent-grad), transparent 40%);
+            transition: all 0.4s;
+        }
+        .prayer-strip.hidden { display: none; }
+
+        .next-prayer.hidden { display: none; }
+
+        .next-prayer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .next-label {
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .next-name { font-size: 16px; font-weight: 600; color: var(--gold); }
+
+        .next-sep { color: var(--text-muted); font-size: 12px; }
+
+        .next-name-ar {
+            font-family: 'Amiri', serif;
+            font-size: 16px;
+            color: var(--gold);
+        }
+
+        .next-countdown {
+            font-size: 15px;
+            font-weight: 300;
+            color: var(--gold-light);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .prayers-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 2px;
+        }
+        .prayers-row.hidden { display: none; }
+
+        .prayer-item {
+            flex: 1;
+            text-align: center;
+            padding: 5px 2px;
+            border-radius: 6px;
+            transition: all 0.5s;
+        }
+
+        .prayer-item.active {
+            background: rgba(201,162,39,0.08);
+            box-shadow: 0 0 12px rgba(201,162,39,0.06);
+        }
+
+        .prayer-item .p-name {
+            font-size: 18px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+        .prayer-item.active .p-name { color: var(--gold); }
+
+        .prayer-item .p-time {
+            font-size: 26px;
+            font-weight: 400;
+            color: var(--text-dim);
+            font-variant-numeric: tabular-nums;
+        }
+        .prayer-item.active .p-time { color: var(--gold-light); font-weight: 500; }
+
+        .prayer-item .p-ar {
+            font-family: 'Amiri', serif;
+            font-size: 20px;
+            color: var(--text-muted);
+        }
+        .prayer-item.active .p-ar { color: var(--gold-dim); }
+
+        .loading {
+            color: var(--text-muted);
+            font-size: 10px;
+            text-align: center;
+        }
+
+        .city-display {
+            font-size: 9px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-align: center;
+            padding: 2px 0;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Settings Overlay -->
+<div class="settings-overlay" id="settingsOverlay" onclick="toggleSettings()"></div>
+
+<!-- Settings Panel -->
+<div class="settings-panel" id="settingsPanel">
+    <div class="settings-title">Settings</div>
+
+    <div class="setting-group">
+        <div class="setting-label">City</div>
+        <input class="setting-input" id="setCity" type="text" placeholder="e.g. Quebec City">
+    </div>
+
+    <div class="setting-group">
+        <div class="setting-label">Country</div>
+        <input class="setting-input" id="setCountry" type="text" placeholder="e.g. Canada">
+    </div>
+
+    <div class="setting-group">
+        <div class="setting-label">Calculation Method</div>
+        <select class="setting-select" id="setMethod">
+            <option value="1">Egyptian</option>
+            <option value="2">ISNA</option>
+            <option value="3">MWL</option>
+            <option value="4">Umm al-Qura (Makkah)</option>
+            <option value="5">Karachi</option>
+            <option value="7">Tehran</option>
+            <option value="8">Gulf Region</option>
+            <option value="9">Kuwait</option>
+            <option value="10">Qatar</option>
+            <option value="11">Singapore</option>
+            <option value="12">UOIF (France)</option>
+            <option value="13">Turkey</option>
+            <option value="14">JAKIM (Malaysia)</option>
+            <option value="15">Tunisia</option>
+            <option value="16">Algeria</option>
+        </select>
+    </div>
+
+    <div class="setting-divider"></div>
+
+    <div class="setting-group">
+        <div class="setting-label">Theme</div>
+        <select class="setting-select" id="setTheme">
+            <option value="gold">Gold & Black</option>
+            <option value="emerald">Emerald & Navy</option>
+            <option value="rosegold">Rose Gold & Charcoal</option>
+        </select>
+    </div>
+
+    <div class="setting-divider"></div>
+    <div class="setting-label">Display Options</div>
+
+    <div class="setting-toggle">
+        <span class="setting-toggle-label">English Translation</span>
+        <div class="toggle-switch on" id="togTranslation" onclick="toggleOption('translation')"></div>
+    </div>
+
+    <div class="setting-toggle">
+        <span class="setting-toggle-label">Du'a Reference</span>
+        <div class="toggle-switch on" id="togRef" onclick="toggleOption('ref')"></div>
+    </div>
+
+    <div class="setting-toggle">
+        <span class="setting-toggle-label">Bismillah</span>
+        <div class="toggle-switch on" id="togBismillah" onclick="toggleOption('bismillah')"></div>
+    </div>
+
+    <div class="setting-toggle">
+        <span class="setting-toggle-label">Gregorian Date</span>
+        <div class="toggle-switch on" id="togGreg" onclick="toggleOption('greg')"></div>
+    </div>
+
+    <div class="setting-toggle">
+        <span class="setting-toggle-label">Hijri Date</span>
+        <div class="toggle-switch on" id="togHijri" onclick="toggleOption('hijri')"></div>
+    </div>
+
+    <div class="setting-toggle">
+        <span class="setting-toggle-label">Next Prayer Countdown</span>
+        <div class="toggle-switch on" id="togNextPrayer" onclick="toggleOption('nextPrayer')"></div>
+    </div>
+
+    <div class="setting-toggle">
+        <span class="setting-toggle-label">Prayer Times Table</span>
+        <div class="toggle-switch on" id="togPrayers" onclick="toggleOption('prayers')"></div>
+    </div>
+
+    <div class="setting-divider"></div>
+    <div class="setting-label">Content Sources</div>
+
+    <div class="setting-toggle">
+        <span class="setting-toggle-label">Quran Ayat</span>
+        <div class="toggle-switch on" id="togAyat" onclick="toggleOption('ayat')"></div>
+    </div>
+
+    <div class="setting-toggle">
+        <span class="setting-toggle-label">Du'a (Quranic)</span>
+        <div class="toggle-switch on" id="togDuaa" onclick="toggleOption('duaa')"></div>
+    </div>
+
+    <div class="setting-toggle">
+        <span class="setting-toggle-label">Hadith (Prophet &#xFDFA;)</span>
+        <div class="toggle-switch on" id="togHadith" onclick="toggleOption('hadith')"></div>
+    </div>
+
+    <div class="setting-divider"></div>
+
+    <div class="setting-btn" onclick="applySettings()">Apply & Save</div>
+</div>
+
+<!-- Top Bar -->
+<div class="top-bar">
+    <div class="top-left">
+        <div class="burger" id="burger" onclick="toggleSettings()">
+            <span></span><span></span><span></span>
+        </div>
+        <div class="clock" id="clock">00:00</div>
+    </div>
+    <div class="date-block">
+        <div class="hijri-date" id="hijriDate"></div>
+        <div class="greg-date" id="gregDate"></div>
+    </div>
+</div>
+
+<!-- Du'a Hero -->
+<div class="duaa-hero">
+    <div class="duaa-ornament" id="bismillah">﷽</div>
+    <div class="duaa-arabic" id="duaaAr"></div>
+    <div class="duaa-line" id="duaaLine"></div>
+    <div class="duaa-translation" id="duaaEn"></div>
+    <div class="duaa-ref" id="duaaRef"></div>
+</div>
+
+<!-- Next Prayer -->
+<div class="next-prayer" id="nextPrayerBar">
+    <span class="next-label">NEXT</span>
+    <span class="next-name" id="nextName">--</span>
+    <span class="next-sep">·</span>
+    <span class="next-name-ar" id="nextNameAr"></span>
+    <span class="next-sep">·</span>
+    <span class="next-countdown" id="nextCountdown">--:--</span>
+</div>
+
+<!-- Prayer Strip -->
+<div class="prayer-strip" id="prayerStrip">
+    <div class="prayers-row" id="prayersRow">
+        <div class="loading">Loading prayer times...</div>
+    </div>
+    <div class="city-display" id="cityDisplay"></div>
+</div>
+
+<script>
+    // ── Read config from URL hash or query params ──
+    const hashStr = window.location.hash.replace('#','');
+    const searchStr = window.location.search.replace('?','');
+    const params = new URLSearchParams(hashStr || searchStr);
+
+    // ── Settings with localStorage fallback ──
+    const STORE_KEY = 'prayerWidgetSettings';
+
+    function paramBool(key, def) {
+        const v = params.get(key);
+        if (v === null) return def;
+        return v === '1' || v === 'true';
+    }
+
+    function loadSettings() {
+        const fromParams = {
+            city: decodeURIComponent(params.get('city') || ''),
+            country: decodeURIComponent(params.get('country') || ''),
+            method: params.get('method') || '',
+            theme: params.get('theme') || '',
+            show: {
+                translation: paramBool('translation', true),
+                ref: paramBool('ref', true),
+                bismillah: paramBool('bismillah', true),
+                greg: paramBool('greg', true),
+                hijri: paramBool('hijri', true),
+                nextPrayer: paramBool('nextPrayer', true),
+                prayers: paramBool('prayers', true),
+                prayerRow: paramBool('prayerRow', true),
+                ayat: paramBool('ayat', true),
+                duaa: paramBool('duaa', true),
+                hadith: paramBool('hadith', true)
+            },
+            showBurger: paramBool('burger', true)
+        };
+        const defaults = {
+            city: 'Quebec City',
+            country: 'Canada',
+            method: '2',
+            theme: 'gold',
+            show: { translation: true, ref: true, bismillah: true, greg: true, hijri: true, nextPrayer: true, prayers: true, prayerRow: true, ayat: true, duaa: true, hadith: true },
+            showBurger: true
+        };
+        try {
+            const saved = JSON.parse(localStorage.getItem(STORE_KEY));
+            if (saved) {
+                const merged = { ...defaults, ...saved, show: { ...defaults.show, ...(saved.show || {}) } };
+                // URL params override saved settings
+                if (fromParams.city) merged.city = fromParams.city;
+                if (fromParams.country) merged.country = fromParams.country;
+                if (fromParams.method) merged.method = fromParams.method;
+                if (fromParams.theme) merged.theme = fromParams.theme;
+                if (params.has('burger')) merged.showBurger = fromParams.showBurger;
+                Object.keys(fromParams.show).forEach(k => {
+                    if (params.has(k)) merged.show[k] = fromParams.show[k];
+                });
+                return merged;
+            }
+        } catch(e) {}
+        return { ...defaults, ...fromParams, city: fromParams.city || defaults.city, country: fromParams.country || defaults.country, method: fromParams.method || defaults.method, theme: fromParams.theme || defaults.theme };
+    }
+
+    function saveSettings(s) {
+        localStorage.setItem(STORE_KEY, JSON.stringify(s));
+    }
+
+    let settings = loadSettings();
+    const DUAA_INTERVAL = 30000;
+
+    // ── Themes ──
+    const themes = {
+        gold: {
+            bg: '#07090f', accent: '#c9a227', accentLight: '#e8d48b',
+            accentDim: 'rgba(201, 162, 39, 0.25)', accentGlow: 'rgba(201, 162, 39, 0.3)',
+            accentBg: 'rgba(201, 162, 39, 0.08)', accentBgGlow: 'rgba(201, 162, 39, 0.06)',
+            accentGrad: 'rgba(201,162,39,0.04)', text: '#e4dfd4',
+            textDim: 'rgba(228, 223, 212, 0.5)', textMuted: 'rgba(228, 223, 212, 0.25)',
+            border: 'rgba(201, 162, 39, 0.1)'
+        },
+        emerald: {
+            bg: '#0a1628', accent: '#2ecc71', accentLight: '#82e6ab',
+            accentDim: 'rgba(46, 204, 113, 0.25)', accentGlow: 'rgba(46, 204, 113, 0.3)',
+            accentBg: 'rgba(46, 204, 113, 0.08)', accentBgGlow: 'rgba(46, 204, 113, 0.06)',
+            accentGrad: 'rgba(46,204,113,0.04)', text: '#dce6f0',
+            textDim: 'rgba(220, 230, 240, 0.55)', textMuted: 'rgba(220, 230, 240, 0.25)',
+            border: 'rgba(46, 204, 113, 0.12)'
+        },
+        rosegold: {
+            bg: '#121212', accent: '#b76e79', accentLight: '#daa5ad',
+            accentDim: 'rgba(183, 110, 121, 0.25)', accentGlow: 'rgba(183, 110, 121, 0.3)',
+            accentBg: 'rgba(183, 110, 121, 0.08)', accentBgGlow: 'rgba(183, 110, 121, 0.06)',
+            accentGrad: 'rgba(183,110,121,0.04)', text: '#f0e6e8',
+            textDim: 'rgba(240, 230, 232, 0.55)', textMuted: 'rgba(240, 230, 232, 0.25)',
+            border: 'rgba(183, 110, 121, 0.12)'
+        }
+    };
+
+    function applyTheme(themeName) {
+        const t = themes[themeName] || themes.gold;
+        const r = document.documentElement.style;
+        r.setProperty('--bg', t.bg);
+        r.setProperty('--gold', t.accent);
+        r.setProperty('--gold-light', t.accentLight);
+        r.setProperty('--gold-dim', t.accentDim);
+        r.setProperty('--text', t.text);
+        r.setProperty('--text-dim', t.textDim);
+        r.setProperty('--text-muted', t.textMuted);
+        r.setProperty('--border', t.border);
+        r.setProperty('--accent-grad', t.accentGrad);
+    }
+
+    function applyVisibility() {
+        const s = settings.show;
+        document.getElementById('duaaEn').classList.toggle('hidden', !s.translation);
+        document.getElementById('duaaLine').classList.toggle('hidden', !s.translation);
+        document.getElementById('duaaRef').classList.toggle('hidden', !s.ref);
+        document.getElementById('bismillah').classList.toggle('hidden', !s.bismillah);
+        document.getElementById('gregDate').classList.toggle('hidden', !s.greg);
+        document.getElementById('hijriDate').classList.toggle('hidden', !s.hijri);
+        document.getElementById('nextPrayerBar').classList.toggle('hidden', !s.nextPrayer);
+        document.getElementById('prayerStrip').classList.toggle('hidden', !s.prayers);
+
+        // Enlarge Arabic if translation is hidden
+        document.getElementById('duaaAr').classList.toggle('enlarged', !s.translation);
+
+        // Burger visibility
+        document.getElementById('burger').style.display = settings.showBurger ? 'flex' : 'none';
+
+        // Sync toggles
+        Object.keys(s).forEach(key => {
+            const tog = document.getElementById('tog' + key.charAt(0).toUpperCase() + key.slice(1));
+            if (tog) tog.classList.toggle('on', s[key]);
+        });
+    }
+
+    // ── Settings UI ──
+    function toggleSettings() {
+        const panel = document.getElementById('settingsPanel');
+        const overlay = document.getElementById('settingsOverlay');
+        const burger = document.getElementById('burger');
+        const isOpen = panel.classList.contains('open');
+
+        panel.classList.toggle('open');
+        overlay.classList.toggle('open');
+        burger.classList.toggle('open');
+
+        if (!isOpen) {
+            document.getElementById('setCity').value = settings.city;
+            document.getElementById('setCountry').value = settings.country;
+            document.getElementById('setMethod').value = settings.method;
+            document.getElementById('setTheme').value = settings.theme;
+        }
+    }
+
+    function toggleOption(key) {
+        settings.show[key] = !settings.show[key];
+        applyVisibility();
+        saveSettings(settings);
+    }
+
+    function applySettings() {
+        settings.city = document.getElementById('setCity').value.trim() || settings.city;
+        settings.country = document.getElementById('setCountry').value.trim() || settings.country;
+        settings.method = document.getElementById('setMethod').value;
+        settings.theme = document.getElementById('setTheme').value;
+
+        applyTheme(settings.theme);
+        saveSettings(settings);
+        fetchPrayerTimes();
+        toggleSettings();
+    }
+
+    // ── Prayer data ──
+    const prayerKeys = ['Fajr','Sunrise','Dhuhr','Asr','Maghrib','Isha'];
+    const prayerAr = { Fajr:'الفجر', Sunrise:'الشروق', Dhuhr:'الظهر', Asr:'العصر', Maghrib:'المغرب', Isha:'العشاء' };
+    let prayerTimes = {};
+
+    // ── Quran Surah info (114 surahs) ──
+    const surahNames = [
+        '','Al-Fatiha','Al-Baqarah','Aal-Imran','An-Nisa','Al-Ma\'idah','Al-An\'am','Al-A\'raf','Al-Anfal','At-Tawbah','Yunus',
+        'Hud','Yusuf','Ar-Ra\'d','Ibrahim','Al-Hijr','An-Nahl','Al-Isra','Al-Kahf','Maryam','Ta-Ha',
+        'Al-Anbiya','Al-Hajj','Al-Mu\'minun','An-Nur','Al-Furqan','Ash-Shu\'ara','An-Naml','Al-Qasas','Al-Ankabut','Ar-Rum',
+        'Luqman','As-Sajdah','Al-Ahzab','Saba','Fatir','Ya-Sin','As-Saffat','Sad','Az-Zumar','Ghafir',
+        'Fussilat','Ash-Shura','Az-Zukhruf','Ad-Dukhan','Al-Jathiyah','Al-Ahqaf','Muhammad','Al-Fath','Al-Hujurat','Qaf',
+        'Adh-Dhariyat','At-Tur','An-Najm','Al-Qamar','Ar-Rahman','Al-Waqi\'ah','Al-Hadid','Al-Mujadilah','Al-Hashr','Al-Mumtahanah',
+        'As-Saff','Al-Jumu\'ah','Al-Munafiqun','At-Taghabun','At-Talaq','At-Tahrim','Al-Mulk','Al-Qalam','Al-Haqqah','Al-Ma\'arij',
+        'Nuh','Al-Jinn','Al-Muzzammil','Al-Muddaththir','Al-Qiyamah','Al-Insan','Al-Mursalat','An-Naba','An-Nazi\'at','Abasa',
+        'At-Takwir','Al-Infitar','Al-Mutaffifin','Al-Inshiqaq','Al-Buruj','At-Tariq','Al-A\'la','Al-Ghashiyah','Al-Fajr','Al-Balad',
+        'Ash-Shams','Al-Layl','Ad-Duha','Ash-Sharh','At-Tin','Al-Alaq','Al-Qadr','Al-Bayyinah','Az-Zalzalah','Al-Adiyat',
+        'Al-Qari\'ah','At-Takathur','Al-Asr','Al-Humazah','Al-Fil','Quraysh','Al-Ma\'un','Al-Kawthar','Al-Kafirun','An-Nasr',
+        'Al-Masad','Al-Ikhlas','Al-Falaq','An-Nas'
+    ];
+
+    const surahNamesAr = [
+        '','الفاتحة','البقرة','آل عمران','النساء','المائدة','الأنعام','الأعراف','الأنفال','التوبة','يونس',
+        'هود','يوسف','الرعد','إبراهيم','الحجر','النحل','الإسراء','الكهف','مريم','طه',
+        'الأنبياء','الحج','المؤمنون','النور','الفرقان','الشعراء','النمل','القصص','العنكبوت','الروم',
+        'لقمان','السجدة','الأحزاب','سبأ','فاطر','يس','الصافات','ص','الزمر','غافر',
+        'فصلت','الشورى','الزخرف','الدخان','الجاثية','الأحقاف','محمد','الفتح','الحجرات','ق',
+        'الذاريات','الطور','النجم','القمر','الرحمن','الواقعة','الحديد','المجادلة','الحشر','الممتحنة',
+        'الصف','الجمعة','المنافقون','التغابن','الطلاق','التحريم','الملك','القلم','الحاقة','المعارج',
+        'نوح','الجن','المزمل','المدثر','القيامة','الإنسان','المرسلات','النبأ','النازعات','عبس',
+        'التكوير','الانفطار','المطففين','الانشقاق','البروج','الطارق','الأعلى','الغاشية','الفجر','البلد',
+        'الشمس','الليل','الضحى','الشرح','التين','العلق','القدر','البينة','الزلزلة','العاديات',
+        'القارعة','التكاثر','العصر','الهمزة','الفيل','قريش','الماعون','الكوثر','الكافرون','النصر',
+        'المسد','الإخلاص','الفلق','الناس'
+    ];
+
+    // ── Quranic Du'as Collection (Supplications from Quran) ──
+    const duaaCollection = [
+        { ar: "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ", en: "Our Lord, give us good in this world and good in the Hereafter, and save us from the torment of the Fire.", ref: "سورة البقرة ٢:٢٠١ — Al-Baqarah 2:201" },
+        { ar: "رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِنْ لَدُنْكَ رَحْمَةً إِنَّكَ أَنْتَ الْوَهَّابُ", en: "Our Lord, do not let our hearts deviate after You have guided us, and grant us mercy from You.", ref: "سورة آل عمران ٣:٨ — Aal-Imran 3:8" },
+        { ar: "رَبِّ اغْفِرْ لِي وَلِوَالِدَيَّ وَلِلْمُؤْمِنِينَ يَوْمَ يَقُومُ الْحِسَابُ", en: "Our Lord, forgive me and my parents and the believers on the Day the account is established.", ref: "سورة إبراهيم ١٤:٤١ — Ibrahim 14:41" },
+        { ar: "حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ", en: "Sufficient for us is Allah, and He is the best Disposer of affairs.", ref: "سورة آل عمران ٣:١٧٣ — Aal-Imran 3:173" },
+        { ar: "رَبِّ اشْرَحْ لِي صَدْرِي وَيَسِّرْ لِي أَمْرِي", en: "My Lord, expand for me my chest and ease for me my task.", ref: "سورة طه ٢٠:٢٥-٢٦ — Ta-Ha 20:25-26" },
+        { ar: "لَا إِلٰهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ", en: "There is no deity except You; exalted are You. Indeed, I have been of the wrongdoers.", ref: "سورة الأنبياء ٢١:٨٧ — Al-Anbiya 21:87" },
+        { ar: "رَبَّنَا هَبْ لَنَا مِنْ أَزْوَاجِنَا وَذُرِّيَّاتِنَا قُرَّةَ أَعْيُنٍ وَاجْعَلْنَا لِلْمُتَّقِينَ إِمَامًا", en: "Our Lord, grant us from our spouses and offspring comfort to our eyes, and make us leaders of the righteous.", ref: "سورة الفرقان ٢٥:٧٤ — Al-Furqan 25:74" },
+        { ar: "رَبَّنَا ظَلَمْنَا أَنفُسَنَا وَإِن لَّمْ تَغْفِرْ لَنَا وَتَرْحَمْنَا لَنَكُونَنَّ مِنَ الْخَاسِرِينَ", en: "Our Lord, we have wronged ourselves, and if You do not forgive us and have mercy upon us, we will surely be among the losers.", ref: "سورة الأعراف ٧:٢٣ — Al-A'raf 7:23" },
+        { ar: "رَبِّ أَوْزِعْنِي أَنْ أَشْكُرَ نِعْمَتَكَ الَّتِي أَنْعَمْتَ عَلَيَّ وَعَلَىٰ وَالِدَيَّ", en: "My Lord, enable me to be grateful for Your favor which You have bestowed upon me and upon my parents.", ref: "سورة النمل ٢٧:١٩ — An-Naml 27:19" },
+        { ar: "رَبَّنَا أَفْرِغْ عَلَيْنَا صَبْرًا وَثَبِّتْ أَقْدَامَنَا وَانصُرْنَا عَلَى الْقَوْمِ الْكَافِرِينَ", en: "Our Lord, pour upon us patience and plant firmly our feet and give us victory.", ref: "سورة البقرة ٢:٢٥٠ — Al-Baqarah 2:250" },
+        { ar: "رَبَّنَا لَا تُؤَاخِذْنَا إِن نَّسِينَا أَوْ أَخْطَأْنَا", en: "Our Lord, do not impose blame upon us if we have forgotten or erred.", ref: "سورة البقرة ٢:٢٨٦ — Al-Baqarah 2:286" },
+        { ar: "رَبَّنَا وَلَا تُحَمِّلْنَا مَا لَا طَاقَةَ لَنَا بِهِ وَاعْفُ عَنَّا وَاغْفِرْ لَنَا وَارْحَمْنَا", en: "Our Lord, and burden us not with that which we have no ability to bear. Pardon us, forgive us, and have mercy upon us.", ref: "سورة البقرة ٢:٢٨٦ — Al-Baqarah 2:286" },
+        { ar: "رَبِّ هَبْ لِي مِن لَّدُنكَ ذُرِّيَّةً طَيِّبَةً إِنَّكَ سَمِيعُ الدُّعَاءِ", en: "My Lord, grant me from Yourself a good offspring. Indeed, You are the Hearer of supplication.", ref: "سورة آل عمران ٣:٣٨ — Aal-Imran 3:38" },
+        { ar: "رَبَّنَا مَا خَلَقْتَ هَـٰذَا بَاطِلًا سُبْحَانَكَ فَقِنَا عَذَابَ النَّارِ", en: "Our Lord, You did not create this aimlessly; exalted are You. Then protect us from the punishment of the Fire.", ref: "سورة آل عمران ٣:١٩١ — Aal-Imran 3:191" },
+        { ar: "رَبِّ أَدْخِلْنِي مُدْخَلَ صِدْقٍ وَأَخْرِجْنِي مُخْرَجَ صِدْقٍ وَاجْعَل لِّي مِن لَّدُنكَ سُلْطَانًا نَّصِيرًا", en: "My Lord, cause me to enter a sound entrance and cause me to exit a sound exit and grant me from Yourself a supporting authority.", ref: "سورة الإسراء ١٧:٨٠ — Al-Isra 17:80" },
+        { ar: "رَبِّ زِدْنِي عِلْمًا", en: "My Lord, increase me in knowledge.", ref: "سورة طه ٢٠:١١٤ — Ta-Ha 20:114" },
+        { ar: "رَبِّ إِنِّي لِمَا أَنزَلْتَ إِلَيَّ مِنْ خَيْرٍ فَقِيرٌ", en: "My Lord, indeed I am, for whatever good You would send down to me, in need.", ref: "سورة القصص ٢٨:٢٤ — Al-Qasas 28:24" },
+        { ar: "رَبَّنَا تَقَبَّلْ مِنَّا إِنَّكَ أَنتَ السَّمِيعُ الْعَلِيمُ", en: "Our Lord, accept from us. Indeed You are the Hearing, the Knowing.", ref: "سورة البقرة ٢:١٢٧ — Al-Baqarah 2:127" },
+        { ar: "رَبِّ اجْعَلْنِي مُقِيمَ الصَّلَاةِ وَمِن ذُرِّيَّتِي رَبَّنَا وَتَقَبَّلْ دُعَاءِ", en: "My Lord, make me an establisher of prayer, and from my descendants. Our Lord, accept my supplication.", ref: "سورة إبراهيم ١٤:٤٠ — Ibrahim 14:40" },
+        { ar: "رَبَّنَا اغْفِرْ لَنَا ذُنُوبَنَا وَإِسْرَافَنَا فِي أَمْرِنَا وَثَبِّتْ أَقْدَامَنَا وَانصُرْنَا عَلَى الْقَوْمِ الْكَافِرِينَ", en: "Our Lord, forgive us our sins and the excess in our affairs and plant firmly our feet and give us victory.", ref: "سورة آل عمران ٣:١٤٧ — Aal-Imran 3:147" },
+        { ar: "رَبَّنَا آتِنَا مِن لَّدُنكَ رَحْمَةً وَهَيِّئْ لَنَا مِنْ أَمْرِنَا رَشَدًا", en: "Our Lord, grant us from Yourself mercy and prepare for us from our affair right guidance.", ref: "سورة الكهف ١٨:١٠ — Al-Kahf 18:10" }
+    ];
+
+    // ── Hadith Collection (Prophetic sayings - du'a format, used as fallback) ──
+    const hadithFallback = [
+        { ar: "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالآخِرَةِ", en: "O Allah, I ask You for pardon and well-being in this life and the Hereafter.", ref: "ابن ماجه — Ibn Majah" },
+        { ar: "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ وَالْعَجْزِ وَالْكَسَلِ", en: "O Allah, I seek refuge in You from worry, grief, incapacity, and laziness.", ref: "صحيح البخاري — Sahih al-Bukhari" },
+        { ar: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ سُبْحَانَ اللَّهِ الْعَظِيمِ", en: "Glory be to Allah and praise Him. Glory be to Allah the Almighty.", ref: "صحيح البخاري ومسلم — Bukhari & Muslim" },
+        { ar: "اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ", en: "O Allah, send blessings and peace upon our Prophet Muhammad ﷺ.", ref: "حديث — Hadith" },
+        { ar: "يَا مُقَلِّبَ الْقُلُوبِ ثَبِّتْ قَلْبِي عَلَى دِينِكَ", en: "O Turner of hearts, make my heart firm upon Your religion.", ref: "سنن الترمذي — Jami' at-Tirmidhi" },
+        { ar: "اللَّهُمَّ أَعِنِّي عَلَى ذِكْرِكَ وَشُكْرِكَ وَحُسْنِ عِبَادَتِكَ", en: "O Allah, help me to remember You, to thank You, and to worship You well.", ref: "سنن أبي داود — Sunan Abu Dawud" },
+        { ar: "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْهُدَى وَالتُّقَى وَالْعَفَافَ وَالْغِنَى", en: "O Allah, I ask You for guidance, piety, chastity, and self-sufficiency.", ref: "صحيح مسلم — Sahih Muslim" },
+        { ar: "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ عِلْمٍ لَا يَنْفَعُ وَمِنْ قَلْبٍ لَا يَخْشَعُ وَمِنْ نَفْسٍ لَا تَشْبَعُ وَمِنْ دَعْوَةٍ لَا يُسْتَجَابُ لَهَا", en: "O Allah, I seek refuge in You from knowledge that does not benefit, a heart that does not humble, a soul that is not satisfied, and a supplication that is not answered.", ref: "صحيح مسلم — Sahih Muslim" },
+        { ar: "اللَّهُمَّ أَصْلِحْ لِي دِينِي الَّذِي هُوَ عِصْمَةُ أَمْرِي وَأَصْلِحْ لِي دُنْيَايَ الَّتِي فِيهَا مَعَاشِي وَأَصْلِحْ لِي آخِرَتِي الَّتِي فِيهَا مَعَادِي", en: "O Allah, set right my religion which is the safeguard of my affairs, and set right my worldly life in which is my living, and set right my Hereafter to which is my return.", ref: "صحيح مسلم — Sahih Muslim" },
+        { ar: "اللَّهُمَّ اغْفِرْ لِي خَطِيئَتِي وَجَهْلِي وَإِسْرَافِي فِي أَمْرِي وَمَا أَنْتَ أَعْلَمُ بِهِ مِنِّي", en: "O Allah, forgive my sins, my ignorance, my excess in my affairs, and what You know better than me.", ref: "صحيح البخاري — Sahih al-Bukhari" },
+        { ar: "اللَّهُمَّ إِنِّي أَسْأَلُكَ الثَّبَاتَ فِي الْأَمْرِ وَالْعَزِيمَةَ عَلَى الرُّشْدِ", en: "O Allah, I ask You for steadfastness in my affairs and determination upon guidance.", ref: "سنن النسائي — Sunan an-Nasa'i" },
+        { ar: "اللَّهُمَّ بَارِكْ لَنَا فِي أَسْمَاعِنَا وَأَبْصَارِنَا وَقُلُوبِنَا وَأَزْوَاجِنَا وَذُرِّيَّاتِنَا", en: "O Allah, bless us in our hearing, our sight, our hearts, our spouses, and our offspring.", ref: "سنن أبي داود — Sunan Abu Dawud" },
+        { ar: "لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ", en: "There is no power and no strength except with Allah.", ref: "صحيح البخاري ومسلم — Bukhari & Muslim" },
+        { ar: "أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ الَّذِي لَا إِلَهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ وَأَتُوبُ إِلَيْهِ", en: "I seek forgiveness from Allah the Almighty, there is no deity but Him, the Ever-Living, the Sustainer, and I repent to Him.", ref: "سنن أبي داود والترمذي — Abu Dawud & Tirmidhi" },
+        { ar: "اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي", en: "O Allah, You are the Pardoner, You love to pardon, so pardon me.", ref: "سنن الترمذي — Jami' at-Tirmidhi" },
+        { ar: "اللَّهُمَّ اجْعَلْ فِي قَلْبِي نُورًا وَفِي بَصَرِي نُورًا وَفِي سَمْعِي نُورًا", en: "O Allah, place light in my heart, light in my sight, and light in my hearing.", ref: "صحيح البخاري ومسلم — Bukhari & Muslim" },
+        { ar: "اللَّهُمَّ إِنِّي أَسْأَلُكَ مِنَ الْخَيْرِ كُلِّهِ عَاجِلِهِ وَآجِلِهِ مَا عَلِمْتُ مِنْهُ وَمَا لَمْ أَعْلَمْ", en: "O Allah, I ask You for all good, immediate and future, what I know of it and what I do not know.", ref: "صحيح مسلم — Sahih Muslim" }
+    ];
+
+    // ── Buffers ──
+    let ayahBuffer = [];
+    let hadithBuffer = [];
+    let isFetchingAyah = false;
+    let isFetchingHadith = false;
+    const TOTAL_AYAHS = 6236;
+    const BUFFER_SIZE = 10;
+
+    // Hadith API config: books and their hadith counts
+    const hadithBooks = [
+        { id: 'bukhari', name: 'صحيح البخاري — Sahih al-Bukhari', max: 7563 },
+        { id: 'muslim', name: 'صحيح مسلم — Sahih Muslim', max: 3033 },
+        { id: 'abu-dawud', name: 'سنن أبي داود — Sunan Abu Dawud', max: 3999 },
+        { id: 'tirmidzi', name: 'سنن الترمذي — Jami\' at-Tirmidhi', max: 3891 },
+        { id: 'nasai', name: 'سنن النسائي — Sunan an-Nasa\'i', max: 5364 },
+        { id: 'ibnu-majah', name: 'سنن ابن ماجه — Sunan Ibn Majah', max: 4332 }
+    ];
+
+    // ── Shuffle helper ──
+    function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+    let shuffledDuaas = shuffle([...duaaCollection]);
+    let duaaCollectionIndex = 0;
+    let shuffledHadithFallback = shuffle([...hadithFallback]);
+    let hadithFallbackIndex = 0;
+
+    // Track which source to show next (round-robin among enabled sources)
+    let sourceIndex = 0;
+
+    // ── Fetch a random ayah from Quran API ──
+    async function fetchRandomAyah() {
+        const ayahNum = Math.floor(Math.random() * TOTAL_AYAHS) + 1;
+        try {
+            const res = await fetch(`https://api.alquran.cloud/v1/ayah/${ayahNum}/editions/quran-uthmani,en.sahih`);
+            const data = await res.json();
+            if (data.code === 200 && data.data && data.data.length === 2) {
+                const arData = data.data[0];
+                const enData = data.data[1];
+                const surahNum = arData.surah.number;
+                const ayahInSurah = arData.numberInSurah;
+                const surahName = surahNames[surahNum] || arData.surah.englishName;
+                const surahNameAr = surahNamesAr[surahNum] || '';
+                return {
+                    ar: arData.text,
+                    en: enData.text,
+                    ref: `سورة ${surahNameAr} ${surahNum}:${ayahInSurah}  —  ${surahName} ${surahNum}:${ayahInSurah}`
+                };
+            }
+        } catch(e) {}
+        return null;
+    }
+
+    // ── Fetch a random hadith from API ──
+    async function fetchRandomHadith() {
+        const book = hadithBooks[Math.floor(Math.random() * hadithBooks.length)];
+        const num = Math.floor(Math.random() * book.max) + 1;
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 8000);
+            const res = await fetch(`https://api.hadith.gading.dev/books/${book.id}/${num}`, { signal: controller.signal });
+            clearTimeout(timer);
+            const data = await res.json();
+            if (data.code === 200 && data.data) {
+                const h = data.data.contents;
+                if (h.arab && h.en) {
+                    return {
+                        ar: h.arab,
+                        en: h.en,
+                        ref: `${book.name} — #${h.number || num}`
+                    };
+                }
+            }
+        } catch(e) {}
+        return null;
+    }
+
+    // ── Fill ayah buffer ──
+    async function fillAyahBuffer() {
+        if (isFetchingAyah) return;
+        isFetchingAyah = true;
+        let failures = 0;
+        while (ayahBuffer.length < BUFFER_SIZE && failures < 5) {
+            const ayah = await fetchRandomAyah();
+            if (ayah) { ayahBuffer.push(ayah); failures = 0; }
+            else failures++;
+        }
+        isFetchingAyah = false;
+    }
+
+    // ── Fill hadith buffer ──
+    async function fillHadithBuffer() {
+        if (isFetchingHadith) return;
+        isFetchingHadith = true;
+        let failures = 0;
+        while (hadithBuffer.length < BUFFER_SIZE && failures < 5) {
+            const h = await fetchRandomHadith();
+            if (h) { hadithBuffer.push(h); failures = 0; }
+            else failures++;
+        }
+        isFetchingHadith = false;
+    }
+
+    // ── Get next item (round-robin among enabled: ayat, du'a, hadith) ──
+    function getNextDuaa() {
+        const sources = [];
+        if (settings.show.ayat) sources.push('ayat');
+        if (settings.show.duaa) sources.push('duaa');
+        if (settings.show.hadith) sources.push('hadith');
+
+        // All off — fallback
+        if (sources.length === 0) {
+            return { ar: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", en: "Glory be to Allah and praise Him.", ref: "صحيح البخاري ومسلم — Bukhari & Muslim" };
+        }
+
+        const src = sources[sourceIndex % sources.length];
+        sourceIndex++;
+
+        if (src === 'ayat') return getNextFromAyahBuffer();
+        if (src === 'duaa') return getNextFromDuaaCollection();
+        if (src === 'hadith') return getNextFromHadithBuffer();
+        return getNextFromDuaaCollection();
+    }
+
+    function getNextFromDuaaCollection() {
+        if (duaaCollectionIndex >= shuffledDuaas.length) {
+            shuffledDuaas = shuffle([...duaaCollection]);
+            duaaCollectionIndex = 0;
+        }
+        return shuffledDuaas[duaaCollectionIndex++];
+    }
+
+    function getNextFromAyahBuffer() {
+        if (ayahBuffer.length > 0) {
+            const d = ayahBuffer.shift();
+            fillAyahBuffer();
+            return d;
+        }
+        return getNextFromDuaaCollection();
+    }
+
+    function getNextFromHadithBuffer() {
+        if (hadithBuffer.length > 0) {
+            const d = hadithBuffer.shift();
+            fillHadithBuffer();
+            return d;
+        }
+        // Fallback to hardcoded hadith collection
+        if (hadithFallbackIndex >= shuffledHadithFallback.length) {
+            shuffledHadithFallback = shuffle([...hadithFallback]);
+            hadithFallbackIndex = 0;
+        }
+        return shuffledHadithFallback[hadithFallbackIndex++];
+    }
+
+    async function fetchPrayerTimes() {
+        try {
+            const res = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(settings.city)}&country=${encodeURIComponent(settings.country)}&method=${settings.method}`);
+            const data = await res.json();
+            const t = data.data.timings;
+            prayerTimes = {};
+            prayerKeys.forEach(k => { prayerTimes[k] = t[k]; });
+
+            const h = data.data.date.hijri;
+            const hijriMonths = ['','مُحَرَّم','صَفَر','رَبِيع الأَوَّل','رَبِيع الثَّانِي','جُمَادَى الأُولَى','جُمَادَى الثَّانِيَة','رَجَب','شَعْبَان','رَمَضَان','شَوَّال','ذُو القَعْدَة','ذُو الحِجَّة'];
+            const monthAr = hijriMonths[h.month.number] || h.month.en;
+            document.getElementById('hijriDate').innerHTML = `<span class="h-day">${h.day}</span><span class="h-month">${monthAr}</span><span class="h-year">${h.year}</span>`;
+            document.getElementById('cityDisplay').textContent = `${settings.city}, ${settings.country}`;
+
+            renderPrayers();
+            updateActive();
+        } catch(e) {
+            document.getElementById('prayersRow').innerHTML = '<div class="loading">Unable to load times</div>';
+        }
+    }
+
+    function renderPrayers() {
+        const row = document.getElementById('prayersRow');
+        row.innerHTML = '';
+        prayerKeys.forEach(key => {
+            const div = document.createElement('div');
+            div.className = 'prayer-item';
+            div.dataset.prayer = key;
+            div.innerHTML = `<div class="p-name">${key}</div><div class="p-time">${prayerTimes[key]}</div><div class="p-ar">${prayerAr[key]}</div>`;
+            row.appendChild(div);
+        });
+    }
+
+    function toMin(t) { const [h,m] = t.split(':').map(Number); return h*60+m; }
+    function nowMin() { const n = new Date(); return n.getHours()*60+n.getMinutes(); }
+
+    function updateActive() {
+        if (!Object.keys(prayerTimes).length) return;
+        const now = nowMin();
+        const items = document.querySelectorAll('.prayer-item');
+        let activeIdx = -1, nextIdx = 0;
+
+        for (let i = prayerKeys.length - 1; i >= 0; i--) {
+            if (now >= toMin(prayerTimes[prayerKeys[i]])) {
+                activeIdx = i;
+                nextIdx = (i + 1) % prayerKeys.length;
+                break;
+            }
+        }
+
+        items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+
+        const nextKey = prayerKeys[nextIdx];
+        let diff = toMin(prayerTimes[nextKey]) - now;
+        if (diff < 0) diff += 1440;
+        const nh = Math.floor(diff/60).toString().padStart(2,'0');
+        const nm = (diff%60).toString().padStart(2,'0');
+
+        document.getElementById('nextName').textContent = nextKey;
+        document.getElementById('nextNameAr').textContent = prayerAr[nextKey];
+        document.getElementById('nextCountdown').textContent = `${nh}h ${nm}m`;
+    }
+
+    function updateClock() {
+        const n = new Date();
+        document.getElementById('clock').textContent = n.getHours().toString().padStart(2,'0') + ':' + n.getMinutes().toString().padStart(2,'0');
+        document.getElementById('gregDate').textContent = n.toLocaleDateString('en-US', { weekday:'short', day:'numeric', month:'short', year:'numeric' }).toUpperCase();
+    }
+
+    function cycleDuaa() {
+        const arEl = document.getElementById('duaaAr');
+        const enEl = document.getElementById('duaaEn');
+        const refEl = document.getElementById('duaaRef');
+
+        arEl.classList.add('fade');
+        enEl.classList.add('fade');
+        refEl.classList.add('fade');
+
+        setTimeout(() => {
+            const d = getNextDuaa();
+            arEl.textContent = d.ar;
+            enEl.textContent = d.en;
+            refEl.textContent = `— ${d.ref}`;
+            arEl.classList.remove('fade');
+            enEl.classList.remove('fade');
+            refEl.classList.remove('fade');
+        }, 1000);
+    }
+
+    async function init() {
+        applyTheme(settings.theme);
+        applyVisibility();
+        updateClock();
+
+        // Show loading text while fetching first ayah
+        document.getElementById('duaaAr').textContent = '...';
+        document.getElementById('duaaEn').textContent = '';
+        document.getElementById('duaaRef').textContent = '';
+
+        // Start filling buffers in background (don't block)
+        fillAyahBuffer();
+        fillHadithBuffer();
+
+        // Show first content immediately from du'a collection
+        const d = getNextDuaa();
+        document.getElementById('duaaAr').textContent = d.ar;
+        document.getElementById('duaaEn').textContent = d.en;
+        document.getElementById('duaaRef').textContent = `— ${d.ref}`;
+
+        fetchPrayerTimes();
+
+        setInterval(updateClock, 1000);
+        setInterval(updateActive, 30000);
+        setInterval(cycleDuaa, DUAA_INTERVAL);
+        setInterval(fetchPrayerTimes, 6 * 60 * 60 * 1000);
+    }
+
+    init();
+</script>
+
+</body>
+</html>
